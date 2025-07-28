@@ -11,7 +11,7 @@ Identify entry points using tools like **burp, nmap, dirb, nikto, google dorks
   file upload forms
 
 **2. Check for input validation**
-Try basic payloads (', ", ;, --, '), ")to see application response to Look for error messages, unexpected behaviors or delays that may indicate SQLi vulnerability
+Try basic payloads (', ", ;, --, ', ")to see application response to Look for error messages, unexpected behaviors or delays that may indicate SQLi vulnerability
 
 **3. Test**
 To check if SQL injection is possible
